@@ -2,12 +2,12 @@
 # Para la ruta BARATA: Qwen cuantizado (~13GB) en GPUs de 24GB (4090).
 FROM runpod/worker-comfyui:5.10.0-base
 
-# Instalar el nodo ComfyUI-GGUF via git clone (mas confiable que comfy-node-install,
-# que depende del nombre exacto del Comfy Registry).
-RUN cd /comfyui/custom_nodes \
-    && git clone --depth 1 https://github.com/city96/ComfyUI-GGUF.git \
-    && cd ComfyUI-GGUF \
-    && uv pip install -r requirements.txt || true
+# Clonar el nodo ComfyUI-GGUF (UnetLoaderGGUF)
+RUN cd /comfyui/custom_nodes && git clone --depth 1 https://github.com/city96/ComfyUI-GGUF.git
 
-# Smoke test: arrancar ComfyUI en CPU para detectar import errors del nodo en el build.
-RUN cd /comfyui && timeout 300 python main.py --quick-test-for-ci --cpu || true
+# Dependencias del nodo (gguf >= 0.13 + sentencepiece + protobuf).
+# Sin || true: si falla, el build falla y se ve en GitHub Actions.
+RUN uv pip install "gguf>=0.13.0" sentencepiece protobuf
+
+# Verificar que el paquete gguf y el nodo quedaron instalados
+RUN python -c "import gguf; print('gguf', gguf.__version__)" && ls /comfyui/custom_nodes/ComfyUI-GGUF/
